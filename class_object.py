@@ -3,10 +3,11 @@ from datetime import datetime
 class Cliente:
     jugadas = []
 
-    def __init__(self,nombre:str,deuda:float=0,telefono:str=None):
+    def __init__(self,nombre:str,deuda:float=0,telefono:str=None,id:str=None):
         self.nombre = nombre
         self.telefono = telefono
         self.deuda = deuda
+        self.id = id
 
     def debe(self):
         return sum(jugada.precio for jugada in filter(lambda x: x.pagado,self.jugadas))

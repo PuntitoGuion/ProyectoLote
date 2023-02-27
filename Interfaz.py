@@ -1,12 +1,22 @@
 import tkinter as tk
-from tkinter import ttk, StringVar,IntVar,BooleanVar,DoubleVar
+from tkinter import ttk, StringVar,IntVar,BooleanVar,DoubleVar,messagebox
 from utilidades import *
 
 
-def test():
-    print(nameRegister.get())
-    print(deudaRegister.get())
-    print(telefonoRegister.get())
+def registerValidation():
+    if nameRegister.get() !='' and not nameRegister.get().isnumeric():
+        nombre = nameRegister.get()
+    else:
+        messagebox.showerror("Error","Por favor, ingrese el nombre completo")
+        return
+    try:
+        deuda = deudaRegister.get()
+    except:
+        messagebox.showerror("Error","Por favor ingrese un monto con la deuda actual, por ejemplo: 14.5")
+        return
+    telefono = telefonoRegister.get()
+    registerSQL(nombre,deuda,telefono)
+
 
 # main
 mainWindow = tk.Tk()
@@ -46,8 +56,8 @@ telefonoRegister = StringVar()
 tk.Label(clientRegister,text="Teléfono: ").grid(row=2,column=0,padx=15,pady=15)
 tk.Entry(clientRegister,textvariable=telefonoRegister).grid(row=2,column=1)
 
-tk.Button(clientRegister,command=lambda: registerSQL(nameRegister.get(),deudaRegister.get(),telefonoRegister.get())).grid(row=3,column=3,padx=15,pady=15)
+tk.Button(clientRegister,command=registerValidation).grid(row=3,column=3,padx=15,pady=15)
 
-
+# pestania de juego
 
 mainWindow.mainloop()

@@ -8,6 +8,7 @@ conexion.execute(
         id INTEGER PRIMARY KEY,
         nombre TEXT NOT NULL,
         deuda FLOAT NOT NULL,
+        ganancia FLOAT NOT NULL,
         telefono TEXT
     );
     """
@@ -20,6 +21,7 @@ conexion.execute(
         cliente TEXT NOT NULL,
         precio FLOAT NOT NULL,
         loteria TEXT NOT NULL,
+        turno TEXT NOT NULL,
         fecha DATE NOT NULL,
         vigencia BOOLEAN NOT NULL,
         cobrado BOOLEAN NOT NULL

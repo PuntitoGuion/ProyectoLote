@@ -1,6 +1,7 @@
 from class_object import *
 import sqlite3
-import pandas as pd
+import re
+from tkinter import messagebox
 
 
 def executeSQL(query:str,datos:tuple=()):
@@ -14,24 +15,42 @@ def executeSQL(query:str,datos:tuple=()):
 
 
 def registerSQL(nombre,deuda,telefono):
-    cliente = Cliente(nombre,deuda,telefono)
-    query = 'INSERT INTO clientes (nombre, deuda, telefono) VALUES (?, ?, ?)'
-    datos = (str(cliente.nombre),float(cliente.deuda),str(cliente.telefono))
+    cliente = Cliente(nombre,deuda,0,telefono)
+    query = 'INSERT INTO clientes (nombre, deuda, telefono, ganancia) VALUES (?, ?, ?, ?)'
+    datos = (str(cliente.nombre),float(cliente.deuda),str(cliente.telefono),float(cliente.ganancia))
     executeSQL(query,datos)
 
-def id_client():
+def id_clients():
     unaQuery = """
-        SELECT *
+        SELECT id, nombre
         FROM clientes
+        ORDER BY nombre ASC
     """
     registros = executeSQL(unaQuery)
 
-    clientesID = {'id':[],'nombre':[]}
-    #clientesID = {}
-    for registro in registros:
-        clientesID['id'].append(registro[0]) # diccionario donde la clave id y nombre tiene como valor una lista de los registros
-        clientesID['nombre'].append(registro[1])
+    return registros
 
-        #clientesID[registro[0]] = registro[1]   -- Diccionario donde cada clave y valor es un registro
-    registrodf = pd.DataFrame(clientesID)
-    print(registrodf)
+def obtenerValorParentesis(cadena):
+    patron = r'\((.*?)\)'  # Expresión regular para buscar cualquier cosa entre paréntesis
+
+    resultado = re.search(patron, cadena)
+    if resultado and resultado.group(1).isnumeric():
+        id = resultado.group(1)
+        return id
+    messagebox.showerror("Error","Por favor asegurarse de que eligió un jugador de la lista")
+    return
+
+def isNumericEntry(value,isFloat=False):
+    if value.isdigit() or value == "":
+        return True
+    else:
+        return False
+
+def isNumericEntryFloat(value):
+    if value == "":
+        return True
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False

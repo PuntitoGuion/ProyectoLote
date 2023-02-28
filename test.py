@@ -8,19 +8,20 @@
 
 import tkinter as tk
 
-# Crear la ventana principal
+def on_enter_press(event):
+    btn.invoke()
+
+def button_command():
+    print("El botón ha sido presionado")
+
 root = tk.Tk()
-root.title("Ejemplo Checkbutton con texto justificado a la izquierda")
 
-# Crear un LabelFrame que contenga el Checkbutton
-label_frame = tk.LabelFrame(root, padx=10, pady=10, labelanchor="w")
-label_frame.pack(padx=10, pady=10)
+entry = tk.Entry(root)
+entry.pack()
 
-# Crear el Checkbutton y vincularlo al LabelFrame
-checkbutton = tk.Checkbutton(label_frame, text="Opciódasn 1").pack(padx=10, pady=10,anchor="w")
-checkbutton = tk.Checkbutton(label_frame, text="Opción dasad1").pack(padx=10, pady=10,anchor="w")
-checkbutton = tk.Checkbutton(label_frame, text="Opcióasdsn 1").pack(padx=10, pady=10,anchor="w")
-checkbutton = tk.Checkbutton(label_frame, text="Opci213ón 1").pack(padx=10, pady=10,anchor="w")
+btn = tk.Button(root, text="Presionar", command=button_command)
+btn.pack()
 
-# Ejecutar el loop principal de la aplicación
+entry.bind("<Return>", on_enter_press)
+
 root.mainloop()

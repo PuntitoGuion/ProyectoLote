@@ -12,16 +12,23 @@ class Cliente:
 
     def debe(self):
         return sum(jugada.precio for jugada in filter(lambda x: x.pagado,self.jugadas))
-
+    
+    def __str__(self):
+        return f"{self.id} - {self.nombre} - Deuda: {self.deuda} - Ganancia: {self.ganancia} - Telefono: {self.telefono}"
+    
 class Jugada:
 
-    def __init__(self,apostador:Cliente,precio:float,loteria:str,pagado:bool,turno:str):
+    def __init__(self,apostador:Cliente,precio:float,loteria:str,pagado:bool,turno:str,numero:int,cobrado=False,vigencia:bool=True,id:str=None):
         self.apostador = apostador
+        self.numero = numero
         self.precio = precio
         self.loteria = loteria
         self.fecha = datetime.today()
         self.pagado = pagado
         self.turno = turno
+        self.id = id
+        self.vigencia = vigencia
+        self.cobrado = cobrado
         apostador.jugadas.append(self)
 
     
@@ -30,14 +37,3 @@ class Jugada:
     
     def __repr__(self):
         return str(self.precio)
-
-cliente1 = Cliente("Julián Ferrari","+541157595519")
-
-listaJugadas = (Jugada(cliente1,15,"Provincia",True,"TM"),
-                Jugada(cliente1,32,"Nacional",True,"TT"),
-                Jugada(cliente1,45,"Entre Rios",False,"TN"),
-                Jugada(cliente1,22,"A",True,"TM"),
-                Jugada(cliente1,35,"B",False,"TT")
-                )
-
-prueba = Jugada(cliente1,20,"Provincia",False,"TN")

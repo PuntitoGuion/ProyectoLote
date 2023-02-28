@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, StringVar,IntVar,BooleanVar,DoubleVar,messagebox
 from utilidades import *
-
+import random
 
 def registerValidation():
     if nameRegister.get() !='' and not nameRegister.get().isnumeric():
@@ -12,7 +12,8 @@ def registerValidation():
     try:
         deuda = deudaRegister.get()
     except:
-        messagebox.showerror("Error","Por favor ingrese un monto con la deuda actual, por ejemplo: 14.5")
+        numero = round(random.uniform(0,999),2)
+        messagebox.showerror("Error",f"Por favor ingrese un monto con la deuda actual, por ejemplo: {numero}")
         return
     telefono = telefonoRegister.get()
     registerSQL(nombre,deuda,telefono)
@@ -22,13 +23,34 @@ def buscarJugador(event):
     jugadores = [(id,nombre) for id, nombre in id_clients() if texto.lower() in nombre.lower() or texto == str(id)]
     comboBoxGame["values"] = list(map(lambda player: f"{player[1]} ({player[0]})", jugadores))
 
+def gameValidation():
+    id = obtenerValorParentesis(playerGame.get())
+    if id == None:
+        return
+    try:
+        numero = numGame.get()
+    except:
+        messagebox.showerror("Error","No se ha ingresado el numero a realizar la apuesta")
+        return
+    try:
+        valor = valorGame.get()
+    except:
+        messagebox.showerror("Error","No se ha ingresado el valor de la apuesta")
+        return
+
+    loterias = [nacionalGame.get(),provinciaGame.get(),santaFeGame.get(),cordobaGame.get(),entreRiosGame.get(),montevideoGame.get()]
+    if not any(loterias):
+        messagebox.showerror("Error","No se ha seleccionado ninguna loteria")
+        return
+    playBets(id,numero,valor,"TM",loterias,pagado.get())
+
 
 # main
 mainWindow = tk.Tk()
 mainWindow.title("Lote Clan")
 mainWindow.geometry("1280x720")
 mainWindow.resizable(False,False)
-mainWindow.
+mainWindow.iconbitmap(r".\ico\1.ico")
 
 # crear un objeto Notebook (pestañas)
 pestanias = ttk.Notebook(mainWindow)
@@ -58,7 +80,8 @@ for i in range(10):
 # pestania de registro de un cliente
 nameRegister = StringVar()
 tk.Label(clientRegister,text="Nombre completo: ").grid(row=0,column=0,sticky="w")
-tk.Entry(clientRegister,textvariable=nameRegister,width=20).grid(row=0,column=1,sticky="w")
+nameRegisterEntry = tk.Entry(clientRegister,textvariable=nameRegister,width=20)
+nameRegisterEntry.grid(row=0,column=1,sticky="w")
 
 deudaRegister = DoubleVar(value="")
 tk.Label(clientRegister,text="Deuda Actual: ").grid(row=1,column=0,sticky="w")
@@ -69,6 +92,7 @@ tk.Label(clientRegister,text="Teléfono: ").grid(row=2,column=0,sticky="w")
 tk.Entry(clientRegister,textvariable=telefonoRegister).grid(row=2,column=1,sticky="w")
 
 tk.Button(clientRegister,command=registerValidation,text="Registrar").grid(row=3,column=1)
+
 #-------------------------------------------------------------------------------------------
 # pestania de juego
 playerGame = StringVar()
@@ -99,9 +123,11 @@ tk.Checkbutton(game,text="Entre Rios",variable=entreRiosGame).grid(row=2,column=
 montevideoGame = BooleanVar()
 tk.Checkbutton(game,text="Montevideo",variable=montevideoGame).grid(row=2,column=3,sticky="w")
 
-#tk.Label(game,text="Teléfono: ").grid(row=3,column=0,padx=15,pady=15)
-#tk.Entry(game,textvariable=telefonoRegister).grid(row=3,column=1)
+pagado = BooleanVar()
+tk.Label(game,text="Paga: ").grid(row=4,column=0,sticky="w")
+tk.Radiobutton(game,text="Si",variable=pagado,value=True).grid(row=4,column=1,sticky="w")
+tk.Radiobutton(game,text="No",variable=pagado,value=False).grid(row=4,column=1)
 
-tk.Button(game, text="Test",command=lambda: obtenerValorParentesis(playerGame.get())).grid(row=4,column=1)
+tk.Button(game, text="Test",command=gameValidation).grid(row=6,column=1)
 
 mainWindow.mainloop()

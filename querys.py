@@ -19,11 +19,13 @@ conexion.execute(
     CREATE TABLE jugadas (
         id INTEGER PRIMARY KEY,
         cliente TEXT NOT NULL,
+        numero INTEGER NOT NULL,
         precio FLOAT NOT NULL,
         loteria TEXT NOT NULL,
         turno TEXT NOT NULL,
         fecha DATE NOT NULL,
         vigencia BOOLEAN NOT NULL,
+        pago BOOLEAN NOT NULL,
         cobrado BOOLEAN NOT NULL
     );
     """

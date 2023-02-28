@@ -1,9 +1,10 @@
 from class_object import *
 import sqlite3
 import re
-from tkinter import messagebox
-import time
-from functools import reduce
+import tkinter as tk
+from tkinter import messagebox,BooleanVar,StringVar
+from datetime import datetime
+
 
 def executeSQL(query:str,datos:tuple=()):
     conn = sqlite3.connect('LoteDB.db')
@@ -116,17 +117,91 @@ def esElMismoApostador(apuestas,idApostador):
         return ids[0] == idApostador
     except IndexError:
         return True
-    
 
-cliente1 = Cliente("Julian Ferrari",10,0,"+541157595519",10)
+def printTicket(text):
+    print("Imprimiendo")
 
-cliente2 = Cliente("Marta Bergara",22,23,"+541148425232",5)
+def windowTicket(textPrint):
+    ventana = tk.Toplevel()
+    comentario = tk.Text(ventana,width=35,height= 20)
+    comentario.insert(tk.END, textPrint)
+
+    retorno = StringVar(value="")
+
+    def aux(textPrint):
+        printTicket(textPrint)
+        retorno.set("True")
+        ventana.withdraw()
+    def aux2():
+        retorno.set("True")
+        ventana.withdraw()
+
+    scrollbar = tk.Scrollbar(ventana)
+    scrollbar.grid(row=0, column=1, sticky=tk.N+tk.S)
+
+    comentario.config(yscrollcommand=scrollbar.set)
+
+    scrollbar.config(command=comentario.yview)
+
+    comentario.config(state=tk.DISABLED)
+    comentario.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+
+    tk.Button(ventana,text= "No imprimir", command=aux2).grid(row=1,column=0,sticky="w",padx=10,pady=10)
+    tk.Button(ventana,text= "Imprimir", command=lambda: aux(textPrint)).grid(row=1,column=0,sticky="e",padx=10,pady=10)
+
+    ventana.protocol("WM_DELETE_WINDOW", lambda: retorno.set("False"))
+    ventana.wait_variable(retorno)
+    ventana.destroy()
+
+    return retorno.get()
 
 
-unaApuesta = Jugada(cliente1,10,"Cordoba",True,"TM",10,True)
+def totalizar(apuestas):
+    espaciosNum = " "*6
+    espaciosLot = " "*13
+    totalPrecio = sum(map(lambda x: x.precio,apuestas))
+    fecha = datetime.today().strftime("%d/%m/%y")
+    apostador = apuestas[0].apostador.nombre + " #" + str(apuestas[0].apostador.id)
 
-otraApuesta = Jugada(cliente2,4,"Entre Ríos",True,"TN",5,True)
+    textPrint = f"""------------Quiniela DF------------
 
-listaDeApuestas = [otraApuesta,unaApuesta,unaApuesta,unaApuesta,unaApuesta,unaApuesta]
+Fecha: {fecha}
+Jugador: {apostador}
 
-#print(verificarMismoApostador(listaDeApuestas))
+-----------------------------------
+Num   Loteria      Turno  Valor
+"""
+
+    for apuesta in apuestas:
+        textNum = str(apuesta.numero) + espaciosNum[0:len(espaciosNum) - len(str(apuesta.numero))]
+        textLot= apuesta.loteria + espaciosLot[0:len(espaciosLot) - len(apuesta.loteria)]
+        textTurn = apuesta.turno + "     "
+        textValor = f"${apuesta.precio}"
+        
+        
+        textPrint+= textNum + textLot + textTurn + textValor + "\n"
+    textPrint+= f"""-----------------------------------
+                  Total:  ${totalPrecio}"""
+    continuar = windowTicket(textPrint)
+    return continuar
+
+#     print(textPrint)
+
+# textoA= """------------Quiniela DF------------
+
+# Fecha: 02/05/06
+# Jugador: Julián Ferrari #1
+
+# -----------------------------------
+# Num   Loteria      Turno  Valor
+                               
+# 1     Provincia    TM     $10
+# 3     Nacional     TT     $20
+# 20    Entre Rios   TN     $1
+# 2145  Montevideo   TT     $4
+# 3201  Cordoba      TM     $23
+# 2320  Santa Fe     TN     $232
+# -----------------------------------
+#                   Total:  $220"""
+
+# windowTicket(textoA)

@@ -54,12 +54,20 @@ def gameValidation():
     apuestasTotales.extend(playBets(idApostador,numero,valor,turnos,loterias,pagadoGame.get()))
 
 
+def gameTotal():
+    if len(apuestasTotales)==0:
+        messagebox.showerror("Error","No se han ingresado jugadas")
+        return
+    continuar = totalizar(apuestasTotales)
+    if continuar=="True":
+        apuestasTotales.clear()
+
 
 
 # main
 mainWindow = tk.Tk()
 mainWindow.title("Lote Clan")
-mainWindow.geometry("1280x720")
+mainWindow.geometry("636x310")
 mainWindow.resizable(False,False)
 mainWindow.iconbitmap(r".\ico\1.ico")
 
@@ -147,6 +155,7 @@ tk.Checkbutton(game,text="Turno Tarde",variable=turnoTardeGame).grid(row=1,colum
 turnoNocheGame = BooleanVar()
 tk.Checkbutton(game,text="Turno Noche",variable=turnoNocheGame).grid(row=2,column=4,sticky="w")
 
-tk.Button(game, text="",command=gameValidation).grid(row=9,column=1)
+tk.Button(game, text="Sumar",command=gameValidation).grid(row=9,column=1)
+tk.Button(game, text="Totalizar",command=gameTotal).grid(row=9,column=2)
 
 mainWindow.mainloop()

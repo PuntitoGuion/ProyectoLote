@@ -3,6 +3,8 @@ from tkinter import ttk, StringVar,IntVar,BooleanVar,DoubleVar,messagebox
 from utilidades import *
 import random
 
+apuestasTotales = []
+
 def registerValidation():
     if nameRegister.get() !='' and not nameRegister.get().isnumeric():
         nombre = nameRegister.get()
@@ -24,9 +26,15 @@ def buscarJugador(event):
     comboBoxGame["values"] = list(map(lambda player: f"{player[1]} ({player[0]})", jugadores))
 
 def gameValidation():
-    id = obtenerValorParentesis(playerGame.get())
-    if id == None:
+    idApostador = obtenerValorParentesis(playerGame.get())
+    loterias = {"Nacional":nacionalGame.get(),"Provincia":provinciaGame.get(),"Santa Fe": santaFeGame.get(),"Cordoba": cordobaGame.get(),"Entre Ríos": entreRiosGame.get(),"Montevideo": montevideoGame.get()}
+    turnos = {"TM":turnoManianaGame.get(),"TT":turnoTardeGame.get(),"TN":turnoNocheGame.get()}
+    if idApostador == None:
         return
+    if not esElMismoApostador(apuestasTotales,idApostador):
+        messagebox.showerror("Error",f"Recuerde que esta operando con {apuestasTotales[0].apostador.nombre}. Si desea continuar con otra persona, presione el boton Totalizar para finalizar la operación")
+        return
+    
     try:
         numero = numGame.get()
     except:
@@ -37,12 +45,15 @@ def gameValidation():
     except:
         messagebox.showerror("Error","No se ha ingresado el valor de la apuesta")
         return
-
-    loterias = [nacionalGame.get(),provinciaGame.get(),santaFeGame.get(),cordobaGame.get(),entreRiosGame.get(),montevideoGame.get()]
     if not any(loterias):
         messagebox.showerror("Error","No se ha seleccionado ninguna loteria")
         return
-    playBets(id,numero,valor,"TM",loterias,pagado.get())
+    elif not any(turnos.values()):
+        messagebox.showerror("Error","No se ha seleccionado turno")
+        return
+    apuestasTotales.extend(playBets(idApostador,numero,valor,turnos,loterias,pagadoGame.get()))
+
+
 
 
 # main
@@ -123,11 +134,19 @@ tk.Checkbutton(game,text="Entre Rios",variable=entreRiosGame).grid(row=2,column=
 montevideoGame = BooleanVar()
 tk.Checkbutton(game,text="Montevideo",variable=montevideoGame).grid(row=2,column=3,sticky="w")
 
-pagado = BooleanVar()
-tk.Label(game,text="Paga: ").grid(row=4,column=0,sticky="w")
-tk.Radiobutton(game,text="Si",variable=pagado,value=True).grid(row=4,column=1,sticky="w")
-tk.Radiobutton(game,text="No",variable=pagado,value=False).grid(row=4,column=1)
+tk.Label(game,text="Paga: ").grid(row=3,column=0,sticky="w")
+pagadoGame = BooleanVar(value=True)
+tk.Radiobutton(game,text="Si",variable=pagadoGame,value=True).grid(row=3,column=1,sticky="w")
+tk.Radiobutton(game,text="No",variable=pagadoGame,value=False).grid(row=3,column=1)
 
-tk.Button(game, text="Test",command=gameValidation).grid(row=6,column=1)
+#tk.Label(game,text="Turno: ").grid(row=0,column=5,sticky="w")
+turnoManianaGame = BooleanVar()
+tk.Checkbutton(game,text="Turno Mañana",variable=turnoManianaGame).grid(row=0,column=4,sticky="w")
+turnoTardeGame = BooleanVar()
+tk.Checkbutton(game,text="Turno Tarde",variable=turnoTardeGame).grid(row=1,column=4,sticky="w")
+turnoNocheGame = BooleanVar()
+tk.Checkbutton(game,text="Turno Noche",variable=turnoNocheGame).grid(row=2,column=4,sticky="w")
+
+tk.Button(game, text="",command=gameValidation).grid(row=9,column=1)
 
 mainWindow.mainloop()

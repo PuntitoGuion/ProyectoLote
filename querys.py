@@ -24,9 +24,9 @@ conexion.execute(
         loteria TEXT NOT NULL,
         turno TEXT NOT NULL,
         fecha DATE NOT NULL,
-        vigencia BOOLEAN NOT NULL,
-        pago BOOLEAN NOT NULL,
-        cobrado BOOLEAN NOT NULL
+        vigencia INTEGER NOT NULL,
+        pago INTEGER NOT NULL,
+        cobrado INTEGER NOT NULL
     );
     """
 )

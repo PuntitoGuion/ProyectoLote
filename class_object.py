@@ -18,7 +18,7 @@ class Cliente:
     
 class Jugada:
 
-    def __init__(self,apostador:Cliente,precio:float,loteria:str,pagado:bool,turno:str,numero:int,cobrado=False,vigencia:bool=True,id:str=None):
+    def __init__(self,apostador,precio,loteria,pagado,turno,numero,cobrado=False,vigencia=True,id=None):
         self.apostador = apostador
         self.numero = numero
         self.precio = precio

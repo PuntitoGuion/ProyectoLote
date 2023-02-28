@@ -7,21 +7,8 @@
 # conn.close()
 
 import tkinter as tk
+from utilidades import executeSQL
 
-def on_enter_press(event):
-    btn.invoke()
-
-def button_command():
-    print("El botón ha sido presionado")
-
-root = tk.Tk()
-
-entry = tk.Entry(root)
-entry.pack()
-
-btn = tk.Button(root, text="Presionar", command=button_command)
-btn.pack()
-
-entry.bind("<Return>", on_enter_press)
-
-root.mainloop()
+executeSQL("""
+    DELETE FROM jugadas
+""")

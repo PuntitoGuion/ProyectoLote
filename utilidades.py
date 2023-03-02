@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import messagebox,StringVar
 from datetime import datetime
 import pandas as pd
+import xlsxwriter
 
 
 def executeSQL(query:str,datos:tuple=()):
@@ -167,22 +168,124 @@ Num   Loteria      Turno  Valor
     return continuar
 
 
-def cerrar(turno):
+def format_right(df):
+    numeric_cols = df.select_dtypes(include='number').columns
+    right_aligned = {col: 'text-align: right' for col in numeric_cols}
+    return df.style.applymap(right_aligned.get, subset=numeric_cols).set_properties(**{'text-align': 'right'})
+
+
+
+
+
+
+def obtenerMetricas(df):
+    # Creamos un diccionario para almacenar los datos de cada lotería
+    data = {}
+
+    # Iteramos por cada lotería
+    for loteria in df['loteria'].unique():
+        # Filtramos los datos correspondientes a la lotería
+        filtro = df[df['loteria'] == loteria].reset_index(drop=True)
+        
+        # Creamos las columnas de número y precio
+        numero_col = loteria + ' numero'
+        precio_col = loteria + ' precio'
+        
+        # Llenamos el diccionario con los datos correspondientes
+        data[numero_col] = list(filtro['numero']) + [None] * (len(df) - len(filtro))
+        data[precio_col] = list(filtro['precio']) + [None] * (len(df) - len(filtro))
+
+    # Creamos el dataframe resultante a partir del diccionario
+    metrica = pd.DataFrame(data)
+
+    # Cambiamos el nombre de las columnas para que sea Nacional Precio - Provincia Precio - Santa Fe Precio...
+    isNumero = True
+    nameColumns = []
+    for columna in metrica.columns:
+        if isNumero:
+            if len(columna.split(" ")) == 2:
+                nameColumns.append(columna.split(" ")[0])
+            else:
+                nameColumns.append(columna.split(" ")[0] + " " + columna.split(" ")[1])
+            isNumero = False
+        else:
+            nameColumns.append(columna.split(" ")[-1].capitalize())
+            isNumero = True
+
+    # Le agregamos un $ a los valores de las columnas Precio
+    for columna in metrica:
+        if columna.split(" ")[-1].capitalize() == "Precio":
+            metrica[columna] = metrica[columna].apply(lambda x: f"${x}" if str(x)!="nan" else x)
+    metrica.columns = nameColumns
+    return metrica
+
+def condicionesJuegosGanadores(numerosGanadores):
+    #Lista para acumular las condiciones
+    condiciones = []
+
+    #Recorremos el diccionario con cada loteria y numero, luego consultamos que no este vacio para evitar errores
+    for loteria, numero in numerosGanadores.items():
+        if numero != '':
+            for i in range(4):
+                condicion = f"(numero = {numero[i:]} AND loteria = '{loteria}') "
+                condiciones.append(condicion)
+
+    # Unir las condiciones con un operador OR
+    condiciones = (" OR ".join(condiciones))
+    return condiciones
+
+
+def cerrar(turno,numerosGanadores):
+    #Conectamos la base de datos
+    conn = sqlite3.connect('LoteDB.db')
+    #Hacemos consulta
     query = f"""
         SELECT id, cliente, numero, precio, loteria
         FROM jugadas
         WHERE turno = "{turno}" AND DATE(fecha) = '{datetime.now().date()}' AND vigencia = 1
-        ORDER BY loteria ASC, cliente ASC, precio DESC
+        ORDER BY cliente ASC, precio DESC, loteria ASC
     """
-    jugadas = executeSQL(query)
-    jugadasdf = pd.DataFrame(jugadas,columns=["id","Cliente","Numero","Valor","Loteria"])
-    
-    ids_str = ",".join(str(x) for x in list(jugadasdf["id"].values))
+
+    #Obtenemos jugadas y metricas
+    jugadas = pd.read_sql(query,conn)
+    metricas = obtenerMetricas(jugadas)
+
+    #Pasamos los ID a tupla para poder obtenerlos en la consulta y poder actualizar los mismos
+    ids_str = ",".join(str(x) for x in list(jugadas["id"].values))
     query = f"""
-        UPDATE jugadas SET vigencia = 0
+        UPDATE jugadas SET vigencia = 1
         WHERE id IN ({ids_str})
     """
     executeSQL(query)
-    jugadasdf.set_index("id",inplace=True)
-    if len(jugadasdf)!=0:
-        jugadasdf.to_excel("test.xlsx",sheet_name="Jugadas")
+    #Agregamos id como indice
+    jugadas.set_index("id",inplace=True)
+    
+    #Le pongo signo $ a la columna precio
+    jugadas['precio'] = jugadas['precio'].apply(lambda x: f"${x}" if str(x)!="nan" else x)
+    
+    #Cambio el nombre de las columnas
+    jugadas.columns = ['Cliente','Número','Valor','Lotería']
+    
+    condiciones = condicionesJuegosGanadores(numerosGanadores)
+    query = f"""
+        SELECT cliente, numero, precio, loteria
+        FROM jugadas
+        WHERE ({condiciones}) AND turno = "{turno}" AND DATE(fecha) = '{datetime.now().date()}' AND vigencia = 1
+        ORDER BY cliente, precio
+    """
+    juegosGanadores = pd.read_sql_query(query,conn)
+
+    # Si no hay jugadas, mostramos un mensaje y cerramos la función, si hay jugadas entonces guardamos la información
+    if len(jugadas)==0:
+        messagebox.showinfo("Atencion","No hay jugadas para realizar el cierre")
+        return
+    else:
+        with pd.ExcelWriter(f"{turno} {datetime.now().date()}.xlsx") as writer:
+            metricas.to_excel(writer, sheet_name='Metricas', index=False)
+            juegosGanadores.to_excel(writer, sheet_name='Ganadores', index=False)
+            jugadas.to_excel(writer, sheet_name='Juegos', index=False)
+
+    conn.close()
+    
+
+#cerrar("TM")

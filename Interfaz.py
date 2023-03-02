@@ -63,17 +63,36 @@ def gameTotal():
         apuestasTotales.clear()
 
 def closeTurn():
-    if turnClose.get() == " ":
+    numerosGanadores = {"Nacional":nacionalClose.get(),"Provincia":provinciaClose.get(),"Santa Fe": santaFeClose.get(),"Cordoba": cordobaClose.get(),"Entre Ríos": entreRiosClose.get(),"Montevideo": montevideoClose.get()}
+
+    validacionEspaciosEnBlanco = map(lambda x: True if x != '' else False, numerosGanadores.values())
+    if not any(validacionEspaciosEnBlanco):
+        messagebox.showerror("Error","Debe ingresar al menos un número de 4 cifras en alguna lotería")
+        return
+
+    validacionNumeros = map(lambda x: True if len(x)==4 or x=='' else False, numerosGanadores.values())
+    if not all(validacionNumeros):
+        messagebox.showerror("Error","Recuerde ingresar 4 digitos para la lotería o dejar el espacio en blanco")
+        return
+    elif turnClose.get() == " ":
         messagebox.showerror("Error","No se ha seleccionado turno.")
         return
     elif not messagebox.askyesno("Atención",f"¿Desea cerrar el turno {turnClose.get()}?"):
         return
-    cerrar("T" + turnClose.get().upper()[0])
+    cerrar("T" + turnClose.get().upper()[0],numerosGanadores)
+
+    nacionalClose.set('')
+    provinciaClose.set('')
+    santaFeClose.set('')
+    cordobaClose.set('')
+    entreRiosClose.set('')
+    montevideoClose.set('')
+
 
 # main
 mainWindow = tk.Tk()
 mainWindow.title("Lote Clan")
-mainWindow.geometry("635x310")
+#mainWindow.geometry("635x310")
 mainWindow.resizable(False,False)
 mainWindow.iconbitmap(r".\ico\1.ico")
 
@@ -170,11 +189,36 @@ tk.Button(game, text="Totalizar",command=gameTotal).grid(row=9,column=2)
 # pestania cierre
 
 turnClose = StringVar(value=" ")
-tk.Label(close,text="Seleccione Turno: ",).grid(row=0,column=1,sticky="w")
-tk.Radiobutton(close,text="Turno Mañana",variable=turnClose,value="mañana").grid(row=0,column=2,sticky="w")
-tk.Radiobutton(close,text="Turno Tarde",variable=turnClose,value="tarde").grid(row=1,column=2,sticky="w")
-tk.Radiobutton(close,text="Turno Noche",variable=turnClose,value="noche").grid(row=2,column=2,sticky="w")
+tk.Label(close,text="Seleccione Turno: ",).grid(row=0,column=2,sticky="w")
+tk.Radiobutton(close,text="Turno Mañana",variable=turnClose,value="mañana").grid(row=0,column=3,sticky="w")
+tk.Radiobutton(close,text="Turno Tarde",variable=turnClose,value="tarde").grid(row=1,column=3,sticky="w")
+tk.Radiobutton(close,text="Turno Noche",variable=turnClose,value="noche").grid(row=2,column=3,sticky="w")
 
-tk.Button(close,text="Cerrar turno",command=closeTurn).grid(row=3,column=2,sticky="w")
+nacionalClose = StringVar()
+tk.Label(close, text="Nacional: ").grid(row=0,column=0,sticky="w")
+tk.Entry(close,textvariable=nacionalClose,validate="key",validatecommand=(close.register(isNumericEntry), '%S')).grid(row=0,column=1,sticky="w")
+
+provinciaClose = StringVar()
+tk.Label(close, text="Provincia: ").grid(row=1,column=0,sticky="w")
+tk.Entry(close,textvariable=provinciaClose,validate="key",validatecommand=(close.register(isNumericEntry), '%S')).grid(row=1,column=1,sticky="w")
+
+santaFeClose = StringVar()
+tk.Label(close, text="Santa Fe: ").grid(row=2,column=0,sticky="w")
+tk.Entry(close,textvariable=santaFeClose,validate="key",validatecommand=(close.register(isNumericEntry), '%S')).grid(row=2,column=1,sticky="w")
+
+entreRiosClose = StringVar()
+tk.Label(close, text="Entre Ríos: ").grid(row=3,column=0,sticky="w")
+tk.Entry(close,textvariable=entreRiosClose,validate="key",validatecommand=(close.register(isNumericEntry), '%S')).grid(row=3,column=1,sticky="w")
+
+cordobaClose = StringVar()
+tk.Label(close, text="Cordoba: ").grid(row=4,column=0,sticky="w")
+tk.Entry(close,textvariable=cordobaClose,validate="key",validatecommand=(close.register(isNumericEntry), '%S')).grid(row=4,column=1,sticky="w")
+
+montevideoClose = StringVar()
+tk.Label(close, text="Montevideo: ").grid(row=5,column=0,sticky="w")
+tk.Entry(close,textvariable=montevideoClose,validate="key",validatecommand=(close.register(isNumericEntry), '%S')).grid(row=5,column=1,sticky="w")
+
+
+tk.Button(close,text="Cerrar turno",command=closeTurn).grid(row=5,column=3,sticky="w")
 
 mainWindow.mainloop()

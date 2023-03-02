@@ -2,8 +2,9 @@ from class_object import *
 import sqlite3
 import re
 import tkinter as tk
-from tkinter import messagebox,BooleanVar,StringVar
+from tkinter import messagebox,StringVar
 from datetime import datetime
+import pandas as pd
 
 
 def executeSQL(query:str,datos:tuple=()):
@@ -56,23 +57,6 @@ def isNumericEntryFloat(value):
     except ValueError:
         return False
 
-def obtenerLoterias(loteriasBool):
-    loterias = []
-    if loteriasBool[0]:
-        loterias.append("Nacional")
-    if loteriasBool[1]:
-        loterias.append("Provincia")
-    if loteriasBool[2]:
-        loterias.append("Santa Fe")
-    if loteriasBool[3]:
-        loterias.append("Cordoba")
-    if loteriasBool[4]:
-        loterias.append("Entre Ríos")
-    if loteriasBool[5]:
-        loterias.append("Montevideo")
-
-    return loterias
-
 def obtenerCliente(id):
     query = f"""
     SELECT *
@@ -100,13 +84,14 @@ def playBets(id,num,valor,turnos,loterias,pagado):
     apuestas = []
     deudaActual = cliente.deuda
 
-    for turno,suValor in turnos.items():
+    for turno, suValor in turnos.items():
         if suValor:
             for loteria, suValor_ in loterias.items():
                 if suValor_:
                     apuestas.append(bet(cliente,valor,turno,loteria,pagado,num))
                     if not pagado:
                         deudaActual+=valor
+                        
     query = f"""UPDATE clientes SET deuda={deudaActual} WHERE id={cliente.id}"""
     executeSQL(query)
     return apuestas
@@ -123,11 +108,11 @@ def printTicket(text):
 
 def windowTicket(textPrint):
     ventana = tk.Toplevel()
+    ventana.resizable(False,False)
     comentario = tk.Text(ventana,width=35,height= 20)
     comentario.insert(tk.END, textPrint)
 
     retorno = StringVar(value="")
-
     def aux(textPrint):
         printTicket(textPrint)
         retorno.set("True")
@@ -136,15 +121,13 @@ def windowTicket(textPrint):
         retorno.set("True")
         ventana.withdraw()
 
-    scrollbar = tk.Scrollbar(ventana)
+    scrollbar = tk.Scrollbar(ventana) #Se crea scrollbar y se asocia al comentario
     scrollbar.grid(row=0, column=1, sticky=tk.N+tk.S)
-
     comentario.config(yscrollcommand=scrollbar.set)
-
     scrollbar.config(command=comentario.yview)
 
     comentario.config(state=tk.DISABLED)
-    comentario.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+    comentario.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W,padx=5,pady=5)
 
     tk.Button(ventana,text= "No imprimir", command=aux2).grid(row=1,column=0,sticky="w",padx=10,pady=10)
     tk.Button(ventana,text= "Imprimir", command=lambda: aux(textPrint)).grid(row=1,column=0,sticky="e",padx=10,pady=10)
@@ -154,7 +137,6 @@ def windowTicket(textPrint):
     ventana.destroy()
 
     return retorno.get()
-
 
 def totalizar(apuestas):
     espaciosNum = " "*6
@@ -177,31 +159,30 @@ Num   Loteria      Turno  Valor
         textLot= apuesta.loteria + espaciosLot[0:len(espaciosLot) - len(apuesta.loteria)]
         textTurn = apuesta.turno + "     "
         textValor = f"${apuesta.precio}"
-        
-        
         textPrint+= textNum + textLot + textTurn + textValor + "\n"
-    textPrint+= f"""-----------------------------------
-                  Total:  ${totalPrecio}"""
+
+    textPrint+= f"""-----------------------------------\n                  Total:  ${totalPrecio}"""
     continuar = windowTicket(textPrint)
+
     return continuar
 
-#     print(textPrint)
 
-# textoA= """------------Quiniela DF------------
-
-# Fecha: 02/05/06
-# Jugador: Julián Ferrari #1
-
-# -----------------------------------
-# Num   Loteria      Turno  Valor
-                               
-# 1     Provincia    TM     $10
-# 3     Nacional     TT     $20
-# 20    Entre Rios   TN     $1
-# 2145  Montevideo   TT     $4
-# 3201  Cordoba      TM     $23
-# 2320  Santa Fe     TN     $232
-# -----------------------------------
-#                   Total:  $220"""
-
-# windowTicket(textoA)
+def cerrar(turno):
+    query = f"""
+        SELECT id, cliente, numero, precio, loteria
+        FROM jugadas
+        WHERE turno = "{turno}" AND DATE(fecha) = '{datetime.now().date()}' AND vigencia = 1
+        ORDER BY loteria ASC, cliente ASC, precio DESC
+    """
+    jugadas = executeSQL(query)
+    jugadasdf = pd.DataFrame(jugadas,columns=["id","Cliente","Numero","Valor","Loteria"])
+    
+    ids_str = ",".join(str(x) for x in list(jugadasdf["id"].values))
+    query = f"""
+        UPDATE jugadas SET vigencia = 0
+        WHERE id IN ({ids_str})
+    """
+    executeSQL(query)
+    jugadasdf.set_index("id",inplace=True)
+    if len(jugadasdf)!=0:
+        jugadasdf.to_excel("test.xlsx",sheet_name="Jugadas")

@@ -53,21 +53,27 @@ def gameValidation():
         return
     apuestasTotales.extend(playBets(idApostador,numero,valor,turnos,loterias,pagadoGame.get()))
 
-
 def gameTotal():
     if len(apuestasTotales)==0:
-        messagebox.showerror("Error","No se han ingresado jugadas")
+        messagebox.showerror("Error","No se han ingresado jugadas.")
         return
+
     continuar = totalizar(apuestasTotales)
     if continuar=="True":
         apuestasTotales.clear()
 
-
+def closeTurn():
+    if turnClose.get() == " ":
+        messagebox.showerror("Error","No se ha seleccionado turno.")
+        return
+    elif not messagebox.askyesno("Atención",f"¿Desea cerrar el turno {turnClose.get()}?"):
+        return
+    cerrar("T" + turnClose.get().upper()[0])
 
 # main
 mainWindow = tk.Tk()
 mainWindow.title("Lote Clan")
-mainWindow.geometry("636x310")
+mainWindow.geometry("635x310")
 mainWindow.resizable(False,False)
 mainWindow.iconbitmap(r".\ico\1.ico")
 
@@ -76,25 +82,28 @@ pestanias = ttk.Notebook(mainWindow)
 
 ## crear las pestañas
 #tab1 = ttk.Frame(pestanias)
-#tab2 = ttk.Frame(pestanias)
+close = ttk.Frame(pestanias)
 game = ttk.Frame(pestanias)
 clientRegister = ttk.Frame(pestanias)
 
-## agregar pestanias
+# agregar pestanias
+# el orden en que se agregan es como se van a ver
+
 #pestanias.add(tab1, text="Pestaña 1")
-#pestanias.add(tab2, text="Pestaña 2")
-pestanias.add(game, text="Juego")
-pestanias.add(clientRegister, text="Registro")
+pestanias.add(close, text="Cierre") #3
+pestanias.add(game, text="Juego") #1
+pestanias.add(clientRegister, text="Registro") #2
 
 # empaquetar las pestanias en la ventana principal
 pestanias.pack(fill="both", expand=True)
 #Configurar row y columns
-for i in range(10):
-    game.grid_columnconfigure(i, pad=25)
-    game.grid_rowconfigure(i, pad=25)
-for i in range(10):
-    clientRegister.grid_columnconfigure(i, pad=25)
-    clientRegister.grid_rowconfigure(i, pad=25)
+configWindows = [game,clientRegister,close]
+
+for window in configWindows:
+    for i in range(10):
+        window.grid_columnconfigure(i, pad=25)
+        window.grid_rowconfigure(i, pad=25)        
+
 #-------------------------------------------------------------------------------------------
 # pestania de registro de un cliente
 nameRegister = StringVar()
@@ -147,7 +156,6 @@ pagadoGame = BooleanVar(value=True)
 tk.Radiobutton(game,text="Si",variable=pagadoGame,value=True).grid(row=3,column=1,sticky="w")
 tk.Radiobutton(game,text="No",variable=pagadoGame,value=False).grid(row=3,column=1)
 
-#tk.Label(game,text="Turno: ").grid(row=0,column=5,sticky="w")
 turnoManianaGame = BooleanVar()
 tk.Checkbutton(game,text="Turno Mañana",variable=turnoManianaGame).grid(row=0,column=4,sticky="w")
 turnoTardeGame = BooleanVar()
@@ -157,5 +165,16 @@ tk.Checkbutton(game,text="Turno Noche",variable=turnoNocheGame).grid(row=2,colum
 
 tk.Button(game, text="Sumar",command=gameValidation).grid(row=9,column=1)
 tk.Button(game, text="Totalizar",command=gameTotal).grid(row=9,column=2)
+
+#-------------------------------------------------------------------------------------------
+# pestania cierre
+
+turnClose = StringVar(value=" ")
+tk.Label(close,text="Seleccione Turno: ",).grid(row=0,column=1,sticky="w")
+tk.Radiobutton(close,text="Turno Mañana",variable=turnClose,value="mañana").grid(row=0,column=2,sticky="w")
+tk.Radiobutton(close,text="Turno Tarde",variable=turnClose,value="tarde").grid(row=1,column=2,sticky="w")
+tk.Radiobutton(close,text="Turno Noche",variable=turnClose,value="noche").grid(row=2,column=2,sticky="w")
+
+tk.Button(close,text="Cerrar turno",command=closeTurn).grid(row=3,column=2,sticky="w")
 
 mainWindow.mainloop()

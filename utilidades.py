@@ -166,17 +166,7 @@ Num   Loteria      Turno  Valor
     continuar = windowTicket(textPrint)
 
     return continuar
-
-
-def format_right(df):
-    numeric_cols = df.select_dtypes(include='number').columns
-    right_aligned = {col: 'text-align: right' for col in numeric_cols}
-    return df.style.applymap(right_aligned.get, subset=numeric_cols).set_properties(**{'text-align': 'right'})
-
-
-
-
-
+    
 
 def obtenerMetricas(df):
     # Creamos un diccionario para almacenar los datos de cada lotería
@@ -219,6 +209,50 @@ def obtenerMetricas(df):
     metrica.columns = nameColumns
     return metrica
 
+
+
+def cerrar(turno):
+    #Conectamos la base de datos
+    conn = sqlite3.connect('LoteDB.db')
+    #Hacemos consulta
+    query = f"""
+        SELECT id, cliente, numero, precio, loteria
+        FROM jugadas
+        WHERE turno = "{turno}" AND DATE(fecha) = '{datetime.now().date()}' AND vigencia = 1
+        ORDER BY cliente ASC, precio DESC, loteria ASC
+    """
+
+    #Obtenemos jugadas y metricas
+    jugadas = pd.read_sql(query,conn)
+    conn.close()
+    metricas = obtenerMetricas(jugadas)
+
+    #Pasamos los ID a tupla para poder obtenerlos en la consulta y poder actualizar los mismos
+    ids_str = ",".join(str(x) for x in list(jugadas["id"].values))
+    query = f"""
+        UPDATE jugadas SET vigencia = 0
+        WHERE id IN ({ids_str})
+    """
+    executeSQL(query)
+    #Agregamos id como indice
+    jugadas.set_index("id",inplace=True)
+    
+    #Le pongo signo $ a la columna precio
+    jugadas['precio'] = jugadas['precio'].apply(lambda x: f"${x}" if str(x)!="nan" else x)
+    
+    #Cambio el nombre de las columnas
+    jugadas.columns = ['Cliente','Número','Valor','Lotería']
+
+    # Si no hay jugadas, mostramos un mensaje y cerramos la función, si hay jugadas entonces guardamos la información
+    if len(jugadas)==0:
+        messagebox.showinfo("Atencion","No hay jugadas para realizar el cierre")
+        return
+    else:
+        with pd.ExcelWriter(f"Cierre - {turno} {datetime.now().date()}.xlsx") as writer:
+            metricas.to_excel(writer, sheet_name='Metricas', index=False)
+            jugadas.to_excel(writer, sheet_name='Juegos', index=False)
+
+
 def condicionesJuegosGanadores(numerosGanadores):
     #Lista para acumular las condiciones
     condiciones = []
@@ -234,58 +268,22 @@ def condicionesJuegosGanadores(numerosGanadores):
     condiciones = (" OR ".join(condiciones))
     return condiciones
 
+def reporteGanadores(turno,numerosGanadores):
 
-def cerrar(turno,numerosGanadores):
-    #Conectamos la base de datos
     conn = sqlite3.connect('LoteDB.db')
-    #Hacemos consulta
-    query = f"""
-        SELECT id, cliente, numero, precio, loteria
-        FROM jugadas
-        WHERE turno = "{turno}" AND DATE(fecha) = '{datetime.now().date()}' AND vigencia = 1
-        ORDER BY cliente ASC, precio DESC, loteria ASC
-    """
-
-    #Obtenemos jugadas y metricas
-    jugadas = pd.read_sql(query,conn)
-    metricas = obtenerMetricas(jugadas)
-
-    #Pasamos los ID a tupla para poder obtenerlos en la consulta y poder actualizar los mismos
-    ids_str = ",".join(str(x) for x in list(jugadas["id"].values))
-    query = f"""
-        UPDATE jugadas SET vigencia = 1
-        WHERE id IN ({ids_str})
-    """
-    executeSQL(query)
-    #Agregamos id como indice
-    jugadas.set_index("id",inplace=True)
-    
-    #Le pongo signo $ a la columna precio
-    jugadas['precio'] = jugadas['precio'].apply(lambda x: f"${x}" if str(x)!="nan" else x)
-    
-    #Cambio el nombre de las columnas
-    jugadas.columns = ['Cliente','Número','Valor','Lotería']
-    
     condiciones = condicionesJuegosGanadores(numerosGanadores)
     query = f"""
         SELECT cliente, numero, precio, loteria
         FROM jugadas
-        WHERE ({condiciones}) AND turno = "{turno}" AND DATE(fecha) = '{datetime.now().date()}' AND vigencia = 1
+        WHERE ({condiciones}) AND turno = "{turno}" AND DATE(fecha) = '{datetime.now().date()}'
         ORDER BY cliente, precio
     """
     juegosGanadores = pd.read_sql_query(query,conn)
-
-    # Si no hay jugadas, mostramos un mensaje y cerramos la función, si hay jugadas entonces guardamos la información
-    if len(jugadas)==0:
-        messagebox.showinfo("Atencion","No hay jugadas para realizar el cierre")
-        return
-    else:
-        with pd.ExcelWriter(f"{turno} {datetime.now().date()}.xlsx") as writer:
-            metricas.to_excel(writer, sheet_name='Metricas', index=False)
-            juegosGanadores.to_excel(writer, sheet_name='Ganadores', index=False)
-            jugadas.to_excel(writer, sheet_name='Juegos', index=False)
-
     conn.close()
-    
+    with pd.ExcelWriter(f"Ganadores - {turno} {datetime.now().date()}.xlsx") as writer:
+        juegosGanadores.to_excel(writer, sheet_name='Ganadores', index=False)
+    print(juegosGanadores)
+
+#reporteGanadores("TM",{"Nacional":'0123',"Provincia":'',"Santa Fe":'',"Cordoba":'' ,"Entre Ríos":'' ,"Montevideo":''})
 
 #cerrar("TM")

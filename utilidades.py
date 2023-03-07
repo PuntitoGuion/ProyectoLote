@@ -216,19 +216,20 @@ def configExcelMetrica(nameExcel,ultimaFila):
     hojaMetricas = excel['Metricas']
 
     hojaMetricas[f'A{ultimaFila + 1}'] = "SUBTOTAL:"
-    hojaMetricas[F'B{ultimaFila + 1}'] = f'=SUM(D2:D{ultimaFila})'
+    hojaMetricas[F'B{ultimaFila + 1}'] = f'=SUM(B2:B{ultimaFila})'
 
     hojaMetricas[F'D{ultimaFila + 1}'] = f'=SUM(D2:D{ultimaFila})'
     hojaMetricas[F'F{ultimaFila + 1}'] = f'=SUM(F2:F{ultimaFila})'
     hojaMetricas[F'H{ultimaFila + 1}'] = f'=SUM(H2:H{ultimaFila})'
     hojaMetricas[F'J{ultimaFila + 1}'] = f'=SUM(J2:J{ultimaFila})'
+    hojaMetricas[F'L{ultimaFila + 1}'] = f'=SUM(L2:L{ultimaFila})'
 
     hojaMetricas[f'A{ultimaFila + 3}'] = "TOTAL:"
     hojaMetricas[f'B{ultimaFila + 3}'] = f'=SUM(B{ultimaFila+1},D{ultimaFila+1},F{ultimaFila+1},H{ultimaFila+1},J{ultimaFila+1})'
     hojaMetricas[f'A{ultimaFila + 5}'] = "COMISIÓN:"
     hojaMetricas[f'B{ultimaFila + 5}'] = f'=B{ultimaFila + 3}*0.25'
 
-    for letra in ['B','D','F','H','J']:
+    for letra in ['B','D','F','H','J','L']:
         for cell in hojaMetricas[letra]:
             if cell.row>1:
                 cell.number_format = numbers.FORMAT_CURRENCY_USD_SIMPLE

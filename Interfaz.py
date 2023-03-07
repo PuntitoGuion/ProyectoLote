@@ -70,12 +70,6 @@ def closeTurn():
         return
     cerrar("T" + turnClose.get().upper()[0])
 
-    nacionalClose.set('')
-    provinciaClose.set('')
-    santaFeClose.set('')
-    cordobaClose.set('')
-    entreRiosClose.set('')
-    montevideoClose.set('')
 
 def obtenerNumerosGanadores():
     numerosGanadores = {"Nacional":nacionalClose.get(),"Provincia":provinciaClose.get(),"Santa Fe": santaFeClose.get(),"Cordoba": cordobaClose.get(),"Entre Ríos": entreRiosClose.get(),"Montevideo": montevideoClose.get()}
@@ -95,6 +89,14 @@ def obtenerNumerosGanadores():
     
     if messagebox.askyesno("Atención", f"¿Está seguro que desea obtener los resultados de turno {turnClose.get()}?"):
         reporteGanadores("T" + turnClose.get().upper()[0],numerosGanadores)
+    
+    #Se vacian los entry de los numeros
+    nacionalClose.set('')
+    provinciaClose.set('')
+    santaFeClose.set('')
+    cordobaClose.set('')
+    entreRiosClose.set('')
+    montevideoClose.set('')
         
 # main
 mainWindow = tk.Tk()
@@ -227,7 +229,6 @@ tk.Entry(close,textvariable=cordobaClose,validate="key",validatecommand=(close.r
 montevideoClose = StringVar()
 tk.Label(close, text="Montevideo: ").grid(row=5,column=0,sticky="w")
 tk.Entry(close,textvariable=montevideoClose,validate="key",validatecommand=(close.register(isNumericEntry), '%S')).grid(row=5,column=1,sticky="w")
-
 
 tk.Button(close,text="Cerrar turno",command=closeTurn).grid(row=6,column=4,sticky="e")
 

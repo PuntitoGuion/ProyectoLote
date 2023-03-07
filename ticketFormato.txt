@@ -1,0 +1,23 @@
+------------Quiniela DF------------
+
+Fecha: 02/05/06
+
+-----------------------------------
+Num   Loteria      Turno  Valor
+                               
+1     Provincia    TM     $10
+3     Nacional     TT     $20
+20    Entre Rios   TN     $1
+2145  Montevideo   TT     $4
+3201  Cordoba      TM     $23
+2320  Santa Fe     TN     $232
+-----------------------------------
+                  Total:  $220
+
+
+
+
+
+
+
+{fecha.today().strftime("%d/%m/%y")}

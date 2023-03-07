@@ -5,8 +5,9 @@ import tkinter as tk
 from tkinter import messagebox,StringVar
 from datetime import datetime
 import pandas as pd
-import xlsxwriter
-
+import os
+from openpyxl import load_workbook
+from openpyxl.styles import Alignment, numbers
 
 def executeSQL(query:str,datos:tuple=()):
     conn = sqlite3.connect('LoteDB.db')
@@ -73,6 +74,12 @@ def bet(cliente,valor,turno,loteria,pagado,numero):
     query = f"""INSERT INTO jugadas (cliente, numero, precio, loteria, turno, fecha, vigencia, pago, cobrado) VALUES (?,?,?,?,?,?,?,?,?)"""
     datos = (cliente.nombre,jugada.numero,jugada.precio,jugada.loteria,jugada.turno,jugada.fecha,True,jugada.pagado,False)
     executeSQL(query,datos)
+    if not pagado:
+        query = f"""
+            UPDATE clientes SET ganancia = ganancia + {jugada.precio * (-1)} WHERE id = {cliente.id}
+        """
+        executeSQL(query)
+
     return jugada
 
 def playBets(id,num,valor,turnos,loterias,pagado):
@@ -83,18 +90,13 @@ def playBets(id,num,valor,turnos,loterias,pagado):
         return
     cliente = Cliente(respuestaConsulta[1],respuestaConsulta[2],respuestaConsulta[3],respuestaConsulta[4],int(id))
     apuestas = []
-    deudaActual = cliente.deuda
 
     for turno, suValor in turnos.items():
         if suValor:
             for loteria, suValor_ in loterias.items():
                 if suValor_:
                     apuestas.append(bet(cliente,valor,turno,loteria,pagado,num))
-                    if not pagado:
-                        deudaActual+=valor
-                        
-    query = f"""UPDATE clientes SET deuda={deudaActual} WHERE id={cliente.id}"""
-    executeSQL(query)
+                    
     return apuestas
 
 def esElMismoApostador(apuestas,idApostador):
@@ -194,7 +196,7 @@ def obtenerMetricas(df):
     for columna in metrica.columns:
         if isNumero:
             if len(columna.split(" ")) == 2:
-                nameColumns.append(columna.split(" ")[0])
+                nameColumns.append(columna.split(" ")[0]+"  ")
             else:
                 nameColumns.append(columna.split(" ")[0] + " " + columna.split(" ")[1])
             isNumero = False
@@ -203,55 +205,92 @@ def obtenerMetricas(df):
             isNumero = True
 
     # Le agregamos un $ a los valores de las columnas Precio
-    for columna in metrica:
-        if columna.split(" ")[-1].capitalize() == "Precio":
-            metrica[columna] = metrica[columna].apply(lambda x: f"${x}" if str(x)!="nan" else x)
+    # for columna in metrica:
+    #     if columna.split(" ")[-1].capitalize() == "Precio":
+    #         metrica[columna] = metrica[columna].apply(lambda x: f"${x}" if str(x)!="nan" else x)
     metrica.columns = nameColumns
     return metrica
 
+def configExcelMetrica(nameExcel,ultimaFila):
+    excel = load_workbook(nameExcel)
+    hojaMetricas = excel['Metricas']
 
+    hojaMetricas[f'A{ultimaFila + 1}'] = "SUBTOTAL:"
+    hojaMetricas[F'B{ultimaFila + 1}'] = f'=SUM(D2:D{ultimaFila})'
+
+    hojaMetricas[F'D{ultimaFila + 1}'] = f'=SUM(D2:D{ultimaFila})'
+    hojaMetricas[F'F{ultimaFila + 1}'] = f'=SUM(F2:F{ultimaFila})'
+    hojaMetricas[F'H{ultimaFila + 1}'] = f'=SUM(H2:H{ultimaFila})'
+    hojaMetricas[F'J{ultimaFila + 1}'] = f'=SUM(J2:J{ultimaFila})'
+
+    hojaMetricas[f'A{ultimaFila + 3}'] = "TOTAL:"
+    hojaMetricas[f'B{ultimaFila + 3}'] = f'=SUM(B{ultimaFila+1},D{ultimaFila+1},F{ultimaFila+1},H{ultimaFila+1},J{ultimaFila+1})'
+    hojaMetricas[f'A{ultimaFila + 5}'] = "COMISIÓN:"
+    hojaMetricas[f'B{ultimaFila + 5}'] = f'=B{ultimaFila + 3}*0.25'
+
+    for letra in ['B','D','F','H','J']:
+        for cell in hojaMetricas[letra]:
+            if cell.row>1:
+                cell.number_format = numbers.FORMAT_CURRENCY_USD_SIMPLE
+                cell.alignment = Alignment(horizontal='right')
+                
+    hojaMetricas.column_dimensions['A'].width = 10.25
+
+    excel.save(nameExcel)
 
 def cerrar(turno):
     #Conectamos la base de datos
     conn = sqlite3.connect('LoteDB.db')
+    fechaHoy = datetime.now().date()
     #Hacemos consulta
     query = f"""
         SELECT id, cliente, numero, precio, loteria
         FROM jugadas
-        WHERE turno = "{turno}" AND DATE(fecha) = '{datetime.now().date()}' AND vigencia = 1
+        WHERE turno = "{turno}" AND DATE(fecha) = '{fechaHoy}' AND vigencia = 1
         ORDER BY cliente ASC, precio DESC, loteria ASC
     """
 
     #Obtenemos jugadas y metricas
     jugadas = pd.read_sql(query,conn)
-    conn.close()
     metricas = obtenerMetricas(jugadas)
+    conn.close()
+
+    #Preguntamos si posee registros y si no, devolvemos la funcion con un mensaje
+    if len(jugadas) == 0:
+        messagebox.showinfo("Atención",f"No posee jugadas para {turno} al dia de la fecha: {fechaHoy}")
+        return
 
     #Pasamos los ID a tupla para poder obtenerlos en la consulta y poder actualizar los mismos
     ids_str = ",".join(str(x) for x in list(jugadas["id"].values))
     query = f"""
-        UPDATE jugadas SET vigencia = 0
+        UPDATE jugadas SET vigencia = 1
         WHERE id IN ({ids_str})
     """
     executeSQL(query)
+
     #Agregamos id como indice
     jugadas.set_index("id",inplace=True)
-    
+
     #Le pongo signo $ a la columna precio
     jugadas['precio'] = jugadas['precio'].apply(lambda x: f"${x}" if str(x)!="nan" else x)
     
     #Cambio el nombre de las columnas
     jugadas.columns = ['Cliente','Número','Valor','Lotería']
+    nameExcel = f"Cierre - {turno} {datetime.now().date()}.xlsx"
 
     # Si no hay jugadas, mostramos un mensaje y cerramos la función, si hay jugadas entonces guardamos la información
     if len(jugadas)==0:
         messagebox.showinfo("Atencion","No hay jugadas para realizar el cierre")
         return
     else:
-        with pd.ExcelWriter(f"Cierre - {turno} {datetime.now().date()}.xlsx") as writer:
+        with pd.ExcelWriter(nameExcel) as writer:
             metricas.to_excel(writer, sheet_name='Metricas', index=False)
             jugadas.to_excel(writer, sheet_name='Juegos', index=False)
 
+    #Configuramos Excel para que se pueda visualizar correctamente
+    configExcelMetrica(nameExcel,metricas.dropna(how='all').shape[0] + 2)
+
+    os.system(f'start excel.exe "{nameExcel}"')
 
 def condicionesJuegosGanadores(numerosGanadores):
     #Lista para acumular las condiciones
@@ -280,9 +319,11 @@ def reporteGanadores(turno,numerosGanadores):
     """
     juegosGanadores = pd.read_sql_query(query,conn)
     conn.close()
-    with pd.ExcelWriter(f"Ganadores - {turno} {datetime.now().date()}.xlsx") as writer:
+    nameExcel = f"Ganadores - {turno} {datetime.now().date()}.xlsx"
+    with pd.ExcelWriter(nameExcel) as writer:
         juegosGanadores.to_excel(writer, sheet_name='Ganadores', index=False)
-    print(juegosGanadores)
+    os.system(f'start excel.exe "{nameExcel}"')
+
 
 #reporteGanadores("TM",{"Nacional":'0123',"Provincia":'',"Santa Fe":'',"Cordoba":'' ,"Entre Ríos":'' ,"Montevideo":''})
 
